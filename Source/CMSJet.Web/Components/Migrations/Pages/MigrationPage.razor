@@ -1,4 +1,4 @@
-@page "/migrations/{id:guid}"
+@page "/{id:guid}"
 @rendermode InteractiveServer
 @inject NavigationManager NavigationManager
 @inject DialogService DialogService
@@ -75,13 +75,13 @@
             if (CurrentMigration.Id == Guid.Empty)
             {
                 // DEMO Data
-                CurrentMigration.UserId = Guid.Parse("c2ae5bbb-8815-4835-b61d-440107e32b99");
-                CurrentMigration.SourceConnectionId = Guid.Parse("278ceb98-2b89-40f4-aa9a-5be3f3cbf93b");
-                CurrentMigration.TargetConnectionId = Guid.Parse("278ceb98-2b89-40f4-aa9a-5be3f3cbf93b");
+                CurrentMigration.UserId = Guid.Parse("fe10535c-5008-4961-a6f0-33e02bef8d93");
+                CurrentMigration.SourceConnectionId = Guid.Parse("effeeafa-d8b2-4859-850e-08578abfffc0");
+                CurrentMigration.TargetConnectionId = Guid.Parse("effeeafa-d8b2-4859-850e-08578abfffc0");
                 CurrentMigration.Status = "in_progress";
             
                 var newId = await MigrationService.AddMigrationAsync(CurrentMigration);
-                await NavigateToAsync($"/migrations/{newId}");
+                await NavigateToAsync($"/{newId}");
             }
             else
             {
@@ -114,16 +114,14 @@
 
         if (result == true)
         {
-            // Uncomment if you need to delete:
-            // await MigrationService.DeleteMigrationAsync(CurrentMigration.Id);
-
+            await MigrationService.DeleteMigrationAsync(CurrentMigration.Id);
             await NavigateToAsync();
         }
     }
     
     async Task NavigateToAsync(string? route = null)
     {
-        NavigationManager.NavigateTo(route ?? "/migrations");
+        NavigationManager.NavigateTo(route ?? "/");
     }
     async Task ShowSavingIndicatorAsync(bool isSaving)
     {

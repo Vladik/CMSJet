@@ -14,4 +14,16 @@
       <ProjectReference Include="..\CMSJet.Core\CMSJet.Core.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <AdditionalFiles Include="Components\Connections\Pages\ConnectionPage.razor" />
+      <AdditionalFiles Include="Components\Connections\Pages\ConnectionsPage.razor" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="Components\Pages\Counter.razor" />
+      <_ContentIncludedByDefault Remove="Components\Pages\Error.razor" />
+      <_ContentIncludedByDefault Remove="Components\Pages\Home.razor" />
+      <_ContentIncludedByDefault Remove="Components\Pages\Weather.razor" />
+    </ItemGroup>
+
 </Project>

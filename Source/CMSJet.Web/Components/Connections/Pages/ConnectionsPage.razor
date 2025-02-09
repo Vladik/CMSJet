@@ -1,0 +1,84 @@
+@page "/connections"
+@rendermode InteractiveServer
+@inject NavigationManager NavigationManager
+
+@using CMSJet.Core.Models
+@using CMSJet.Core.Data.Services
+@inject IMigrationService MigrationService
+
+<PageTitle>Connections</PageTitle>
+
+<RadzenStack>
+    <RadzenRow>
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Normal" JustifyContent="JustifyContent.Start" Gap="4">
+                <RadzenIcon Icon="electrical_services"></RadzenIcon>
+                <RadzenText Text="Connections" TextStyle="TextStyle.H5" TagName="TagName.H1" class="rz-m-0"/>
+            </RadzenStack>
+        </RadzenColumn>
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End" Gap="0.5rem">
+                <RadzenButton Icon="add" Text="Add" Click=@(args => GoToItems(Guid.Empty)) ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small" />
+            </RadzenStack>
+        </RadzenColumn>
+    </RadzenRow>
+    <RadzenTextBox Placeholder="Search ..." style="display: block; width: 100%" @oninput="@((t) => Search(t.Value?.ToString() ?? string.Empty))"/>
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenDataList @ref="dataList" Data="@items" TItem="Migration" AllowPaging="true" PageSize="25" PagerHorizontalAlign="HorizontalAlign.Justify" ShowPagingSummary="false"  WrapItems="true">
+                <Template Context="migration">
+                    <RadzenCard Variant="Variant.Filled" class="w-100 rz-shadow-0" Style="margin: 0px 0px 10px 0px;">
+                        <RadzenRow>
+                            <RadzenColumn Size="12" SizeMD="10">
+                                <RadzenLink Path="@($"/connections/{migration.Id}")">
+                                    <RadzenText TextStyle="TextStyle.Subtitle1" TagName="TagName.H2" class="rz-color-secondary">@(migration.Name)</RadzenText>
+                                </RadzenLink>
+                                <RadzenText TextStyle="TextStyle.Body2">@(migration.Name)</RadzenText>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="2">
+                                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End" Gap="0.5rem">
+                                    <RadzenSplitButton Icon="apps" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light" Click=@(args => OnSelectItem(args, migration.Id))>
+                                        <ChildContent>
+                                            <RadzenSplitButtonItem Text="Notes" Value="notes" Icon="notes"/>
+                                            <RadzenSplitButtonItem Text="Wiki" Value="wiki" Icon="school"/>
+                                            <RadzenSplitButtonItem Text="Tasks" Value="tasks" Icon="event_available"/>
+                                            <RadzenSplitButtonItem Text="Files" Value="files" Icon="file_present"/>
+                                        </ChildContent>
+                                    </RadzenSplitButton>
+                                </RadzenStack>
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </RadzenCard>
+                </Template>
+            </RadzenDataList>
+        </RadzenColumn>
+    </RadzenRow>
+</RadzenStack>
+
+@code {
+
+    RadzenDataList<Migration> dataList = null!;
+    IEnumerable<Migration> items = null!;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await LoadAll();
+    }
+    async Task LoadAll()
+    {
+        items = (await MigrationService.GetAllMigrationsAsync()).ToList().OrderByDescending(m=>m.CreatedAt);
+    } 
+    async Task Search(string term)
+    {
+
+    } 
+    void OnSelectItem(RadzenSplitButtonItem item, Guid? id)
+    {
+        NavigationManager.NavigateTo($"/connections/{id?.ToString()}");
+    }
+    void GoToItems(Guid? id)
+    {
+        NavigationManager.NavigateTo($"/connections/{id}");
+    }
+}

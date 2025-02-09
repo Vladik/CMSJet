@@ -56,4 +56,11 @@ public class MigrationService : IMigrationService
 
         return await _migrationRepository.UpdateMigrationAsync(migration);
     }
+
+    public async Task<bool> DeleteMigrationAsync(Guid id)
+    {
+        _logger.LogInformation("Deleting migration: {id}", id);
+        
+        return await _migrationRepository.DeleteMigrationAsync(id);
+    }
 }

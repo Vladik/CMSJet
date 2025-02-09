@@ -43,6 +43,12 @@ public class MigrationRepository : BaseRepository
             int affectedRows = await ExecuteAsync(sql, migration);
             return affectedRows > 0;
         }
+        public async Task<bool> DeleteMigrationAsync(Guid id)
+        {
+            const string sql = "DELETE FROM migrations WHERE id = @Id";
+            int affectedRows = await ExecuteAsync(sql, new { Id = id });
+            return affectedRows > 0;
+        }
         private static Migration MapMigration(NpgsqlDataReader reader)
         {
             return new Migration

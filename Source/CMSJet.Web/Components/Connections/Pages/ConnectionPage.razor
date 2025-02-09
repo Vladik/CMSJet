@@ -1,0 +1,9 @@
+@page "/connections/{id:guid?}"
+@rendermode InteractiveServer
+
+<PageTitle>@("Connection")</PageTitle>
+
+@code {
+
+    [Parameter] public Guid Id { get; set; }
+}
