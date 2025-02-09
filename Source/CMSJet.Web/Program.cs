@@ -14,7 +14,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddRadzenComponents();
 
 // Fetch Connection String from Configuration
-string? connectionString = builder.Configuration.GetConnectionString("PostgresDb");
+string? connectionString = builder.Configuration.GetConnectionString("PostgresDbSB");
 if (string.IsNullOrEmpty(connectionString))
 {
     throw new Exception("PostgreSQL connection string is missing. Please configure 'PostgresDb' in appsettings.json.");
