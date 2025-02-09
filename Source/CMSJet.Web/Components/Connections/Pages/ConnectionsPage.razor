@@ -1,4 +1,4 @@
-@page "/"
+@page "/connections"
 @rendermode InteractiveServer
 @inject NavigationManager NavigationManager
 
@@ -6,14 +6,14 @@
 @using CMSJet.Core.Data.Services
 @inject IMigrationService MigrationService
 
-<PageTitle>Migrations</PageTitle>
+<PageTitle>Connections</PageTitle>
 
 <RadzenStack>
     <RadzenRow>
         <RadzenColumn Size="12" SizeMD="6">
             <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Normal" JustifyContent="JustifyContent.Start" Gap="4">
-                <RadzenIcon Icon="transform"></RadzenIcon>
-                <RadzenText Text="Migrations" TextStyle="TextStyle.H5" TagName="TagName.H1" class="rz-m-0"/>
+                <RadzenIcon Icon="electrical_services"></RadzenIcon>
+                <RadzenText Text="Connections" TextStyle="TextStyle.H5" TagName="TagName.H1" class="rz-m-0"/>
             </RadzenStack>
         </RadzenColumn>
         <RadzenColumn Size="12" SizeMD="6">
@@ -30,7 +30,7 @@
                     <RadzenCard Variant="Variant.Filled" class="w-100 rz-shadow-0" Style="margin: 0px 0px 10px 0px;">
                         <RadzenRow>
                             <RadzenColumn Size="12" SizeMD="10">
-                                <RadzenLink Path="@($"/{migration.Id}")">
+                                <RadzenLink Path="@($"/connections/{migration.Id}")">
                                     <RadzenText TextStyle="TextStyle.Subtitle1" TagName="TagName.H2" class="rz-color-secondary">@(migration.Name)</RadzenText>
                                 </RadzenLink>
                                 <RadzenText TextStyle="TextStyle.Body2">@(migration.Name)</RadzenText>
@@ -75,10 +75,10 @@
     } 
     void OnSelectItem(RadzenSplitButtonItem item, Guid? id)
     {
-        NavigationManager.NavigateTo($"/{id?.ToString()}");
+        NavigationManager.NavigateTo($"/connections/{id?.ToString()}");
     }
     void GoToItems(Guid? id)
     {
-        NavigationManager.NavigateTo($"/{id}");
+        NavigationManager.NavigateTo($"/connections/{id}");
     }
 }
