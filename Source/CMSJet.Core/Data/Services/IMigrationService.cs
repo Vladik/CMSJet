@@ -5,6 +5,7 @@ namespace CMSJet.Core.Data.Services;
 public interface IMigrationService
 {
     Task<IEnumerable<Migration>> GetAllMigrationsAsync();
-    Task<Migration?> GetMigrationByIdAsync(int id);
-    Task<int> AddMigrationAsync(Migration migration);
+    Task<Migration?> GetMigrationByIdAsync(Guid id);
+    Task<Guid> AddMigrationAsync(Migration migration);
+    Task<bool> UpdateMigrationAsync(Migration migration);
 }

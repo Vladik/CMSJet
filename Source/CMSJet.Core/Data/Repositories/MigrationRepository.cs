@@ -13,13 +13,13 @@ public class MigrationRepository : BaseRepository
             return await QueryAsync(sql, MapMigration, cancellationToken: cancellationToken);
         }
 
-        public async Task<Migration?> GetMigrationByIdAsync(int id, CancellationToken cancellationToken = default)
+        public async Task<Migration?> GetMigrationByIdAsync(Guid id, CancellationToken cancellationToken = default)
         {
             const string sql = "SELECT * FROM migrations WHERE id = @Id LIMIT 1";
             return await QuerySingleAsync(sql, MapMigration, new { Id = id }, cancellationToken);
         }
 
-        public async Task<int> AddMigrationAsync(Migration migration, CancellationToken cancellationToken = default)
+        public async Task<Guid> AddMigrationAsync(Migration migration, CancellationToken cancellationToken = default)
         {
             const string sql = @"
                 INSERT INTO migrations (user_id, name, source_connection_id, target_connection_id, status, created_at, updated_at)
@@ -28,7 +28,21 @@ public class MigrationRepository : BaseRepository
 
             return await ExecuteScalarAsync(sql, migration, cancellationToken);
         }
+        public async Task<bool> UpdateMigrationAsync(Migration migration)
+        {
+            const string sql = @"
+                UPDATE migrations
+                SET 
+                    name = @Name,
+                    source_connection_id = @SourceConnectionId,
+                    target_connection_id = @TargetConnectionId,
+                    status = @Status,
+                    updated_at = NOW()
+                WHERE id = @Id";
 
+            int affectedRows = await ExecuteAsync(sql, migration);
+            return affectedRows > 0;
+        }
         private static Migration MapMigration(NpgsqlDataReader reader)
         {
             return new Migration

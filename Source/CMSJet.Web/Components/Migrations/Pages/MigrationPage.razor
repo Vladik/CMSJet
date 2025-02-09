@@ -1,9 +1,135 @@
-@page "/migrations/{id:guid?}"
+@page "/migrations/{id:guid}"
 @rendermode InteractiveServer
+@inject NavigationManager NavigationManager
+@inject DialogService DialogService
 
-<PageTitle>@("jhkjhlkjhl")</PageTitle>
+@using CMSJet.Core.Models
+@using CMSJet.Core.Data.Services
+@inject IMigrationService MigrationService
+
+<PageTitle>@CurrentPageTitle</PageTitle>
+
+<RadzenStack>
+    <RadzenRow>
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Normal" JustifyContent="JustifyContent.Start" Gap="4">
+                <RadzenIcon Icon="developer_board"></RadzenIcon>
+                <RadzenText TextStyle="TextStyle.H5" TagName="TagName.H1" class="rz-m-0">@CurrentPageTitle</RadzenText>
+            </RadzenStack>
+        </RadzenColumn>
+        <RadzenColumn Size="12" SizeMD="3">
+            <RadzenStack Orientation="Orientation.Horizontal"  AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End" Gap="1rem" Wrap="FlexWrap.Wrap">
+            </RadzenStack>
+        </RadzenColumn>
+        <RadzenColumn Size="12" SizeMD="3">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End" Gap="1rem" Wrap="FlexWrap.Wrap">
+                <RadzenProgressBarCircular Visible="@_isSaving" ProgressBarStyle="ProgressBarStyle.Primary" Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" Size="ProgressBarCircularSize.ExtraSmall"/>
+                <RadzenButton form="formCurrentMigration" ButtonType="ButtonType.Submit" Icon="save" Text="Save" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small" Disabled="@_isSaving"/>
+                <RadzenButton Icon="cancel" Text="Close" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small" Click="@OnCloseAsync"/>
+                <RadzenButton Visible="@(CurrentMigration.Id != Guid.Empty)" Icon="delete" Text="Delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@OnDeleteAsync" Disabled="@_isSaving"/>
+            </RadzenStack>
+        </RadzenColumn>
+    </RadzenRow>
+    <RadzenRow>
+        <RadzenColumn Size="12">
+            <RadzenTemplateForm id="formCurrentMigration" TItem="Migration" Data=@CurrentMigration Submit=@OnSaveAsync>
+                <RadzenRow class="rz-mb-4">
+                    <RadzenColumn Size="12" SizeMD="12">
+                        <RadzenLabel Component="txtName" Text="Migration name"  class="rz-mb-1"/>
+                        <RadzenTextBox Name="txtName" MaxLength="150" @bind-Value="@CurrentMigration.Name" Placeholder="Enter migration name" class="w-100"/>
+                        <RadzenRequiredValidator Component="txtName" Text="Name is required!"/>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenTemplateForm>
+        </RadzenColumn>
+    </RadzenRow>
+</RadzenStack>
 
 @code {
 
+    private bool _isSaving = false;
+    
     [Parameter] public Guid Id { get; set; }
+
+    [SupplyParameterFromForm] private Migration CurrentMigration { get; set; } = new();
+    
+    private string CurrentPageTitle => CurrentMigration?.Name ?? "Unnamed Migration";
+    
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id != Guid.Empty)
+        {
+            CurrentMigration = await MigrationService.GetMigrationByIdAsync(Id) ?? new();
+
+            if (CurrentMigration.Id == Guid.Empty)
+                await NavigateToAsync("/notfound");
+        }
+    }
+    
+    async Task OnSaveAsync()
+    {
+        await ShowSavingIndicatorAsync(true);
+        
+        try
+        {
+            if (CurrentMigration.Id == Guid.Empty)
+            {
+                // DEMO Data
+                CurrentMigration.UserId = Guid.Parse("c2ae5bbb-8815-4835-b61d-440107e32b99");
+                CurrentMigration.SourceConnectionId = Guid.Parse("278ceb98-2b89-40f4-aa9a-5be3f3cbf93b");
+                CurrentMigration.TargetConnectionId = Guid.Parse("278ceb98-2b89-40f4-aa9a-5be3f3cbf93b");
+                CurrentMigration.Status = "in_progress";
+            
+                var newId = await MigrationService.AddMigrationAsync(CurrentMigration);
+                await NavigateToAsync($"/migrations/{newId}");
+            }
+            else
+            {
+                await MigrationService.UpdateMigrationAsync(CurrentMigration);
+            }
+        }
+        catch (Exception ex)
+        {
+            // Handle errors if needed (e.g., logging)
+        }
+        finally
+        {
+            await ShowSavingIndicatorAsync(false);
+        }
+    }
+    
+    async Task OnCloseAsync() => await NavigateToAsync();
+
+    
+    async Task OnDeleteAsync()
+    {
+        var result = await DialogService.Confirm(
+            message: "Are you sure you want to delete this migration?",
+            title: "Delete Confirmation",
+            options: new ConfirmOptions
+            {
+                OkButtonText = "Yes",
+                CancelButtonText = "No"
+            });
+
+        if (result == true)
+        {
+            // Uncomment if you need to delete:
+            // await MigrationService.DeleteMigrationAsync(CurrentMigration.Id);
+
+            await NavigateToAsync();
+        }
+    }
+    
+    async Task NavigateToAsync(string? route = null)
+    {
+        NavigationManager.NavigateTo(route ?? "/migrations");
+    }
+    async Task ShowSavingIndicatorAsync(bool isSaving)
+    {
+        _isSaving = isSaving;
+        StateHasChanged(); // Ensure UI updates
+        if (isSaving)
+            await Task.Delay(500); // Delay only when enabling the indicator
+    }
 }

@@ -21,13 +21,8 @@ public class MigrationService : IMigrationService
         return await _migrationRepository.GetAllMigrationsAsync();
     }
 
-    public async Task<Migration?> GetMigrationByIdAsync(int id)
+    public async Task<Migration?> GetMigrationByIdAsync(Guid id)
     {
-        if (id <= 0)
-        {
-            _logger.LogWarning("Invalid migration ID: {Id}", id);
-            return null;
-        }
 
         var migration = await _migrationRepository.GetMigrationByIdAsync(id);
 
@@ -37,7 +32,7 @@ public class MigrationService : IMigrationService
         return migration;
     }
 
-    public async Task<int> AddMigrationAsync(Migration migration)
+    public async Task<Guid> AddMigrationAsync(Migration migration)
     {
         if (string.IsNullOrWhiteSpace(migration.Name))
             throw new ArgumentException("Migration name cannot be empty.", nameof(migration.Name));
@@ -48,5 +43,17 @@ public class MigrationService : IMigrationService
         _logger.LogInformation("Adding migration: {Name}", migration.Name);
 
         return await _migrationRepository.AddMigrationAsync(migration);
+    }
+    public async Task<bool> UpdateMigrationAsync(Migration migration)
+    {
+        if (string.IsNullOrWhiteSpace(migration.Name))
+            throw new ArgumentException("Migration name cannot be empty.", nameof(migration.Name));
+
+        if (migration.UserId == Guid.Empty)
+            throw new ArgumentException("UserId must be provided.", nameof(migration.UserId));
+
+        _logger.LogInformation("Updating migration: {Name}", migration.Name);
+
+        return await _migrationRepository.UpdateMigrationAsync(migration);
     }
 }

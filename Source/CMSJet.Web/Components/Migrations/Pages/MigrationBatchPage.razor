@@ -1,0 +1,9 @@
+@page "/migrationbatches/{id:guid?}"
+@rendermode InteractiveServer
+
+<PageTitle>@("Batch")</PageTitle>
+
+@code {
+
+    [Parameter] public Guid Id { get; set; }
+}

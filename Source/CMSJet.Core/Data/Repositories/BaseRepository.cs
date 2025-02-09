@@ -46,12 +46,12 @@ public class BaseRepository
             return await cmd.ExecuteNonQueryAsync(cancellationToken);
         }
 
-        protected async Task<int> ExecuteScalarAsync(string sql, object? parameters = null, CancellationToken cancellationToken = default)
+        protected async Task<Guid> ExecuteScalarAsync(string sql, object? parameters = null, CancellationToken cancellationToken = default)
         {
             using var conn = await _database.GetConnectionAsync();
             using var cmd = new NpgsqlCommand(sql, conn);
             AddParameters(cmd, parameters);
-            return Convert.ToInt32(await cmd.ExecuteScalarAsync(cancellationToken));
+            return (Guid)await cmd.ExecuteScalarAsync(cancellationToken);
         }
 
         private void AddParameters(NpgsqlCommand cmd, object? parameters)
