@@ -24,10 +24,18 @@ if (string.IsNullOrEmpty(connectionString))
 builder.Services.AddSingleton(new Database(connectionString));
 
 // Register Repositories
-builder.Services.AddScoped<MigrationRepository>();
+//builder.Services.AddScoped<ConnectionRepository>();
+//builder.Services.AddScoped<MigrationRepository>();
+//builder.Services.AddScoped<MigrationBatchRepository>();
+
+builder.Services.AddSingleton<MigrationRepository>();
+builder.Services.AddSingleton<ConnectionRepository>();
+builder.Services.AddSingleton<MigrationBatchRepository>();
 
 // Register Services
+builder.Services.AddScoped<IConnectionService, ConnectionService>();
 builder.Services.AddScoped<IMigrationService, MigrationService>();
+builder.Services.AddScoped<IMigrationBatchService, MigrationBatchService>();
 
 var app = builder.Build();
 

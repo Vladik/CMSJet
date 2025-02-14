@@ -1,4 +1,4 @@
-@page "/migrations/{id:guid}"
+@page "/{id:guid}"
 @rendermode InteractiveServer
 @inject NavigationManager NavigationManager
 @inject DialogService DialogService
@@ -6,6 +6,8 @@
 @using CMSJet.Core.Models
 @using CMSJet.Core.Data.Services
 @inject IMigrationService MigrationService
+@inject IConnectionService ConnectionService
+@inject IMigrationBatchService MigrationBatchService
 
 <PageTitle>@CurrentPageTitle</PageTitle>
 
@@ -18,7 +20,7 @@
             </RadzenStack>
         </RadzenColumn>
         <RadzenColumn Size="12" SizeMD="3">
-            <RadzenStack Orientation="Orientation.Horizontal"  AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End" Gap="1rem" Wrap="FlexWrap.Wrap">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End" Gap="1rem" Wrap="FlexWrap.Wrap">
             </RadzenStack>
         </RadzenColumn>
         <RadzenColumn Size="12" SizeMD="3">
@@ -30,14 +32,60 @@
             </RadzenStack>
         </RadzenColumn>
     </RadzenRow>
+    
     <RadzenRow>
         <RadzenColumn Size="12">
             <RadzenTemplateForm id="formCurrentMigration" TItem="Migration" Data=@CurrentMigration Submit=@OnSaveAsync>
                 <RadzenRow class="rz-mb-4">
                     <RadzenColumn Size="12" SizeMD="12">
-                        <RadzenLabel Component="txtName" Text="Migration name"  class="rz-mb-1"/>
+                        <RadzenLabel Component="txtName" Text="Migration name" class="rz-mb-1"/>
                         <RadzenTextBox Name="txtName" MaxLength="150" @bind-Value="@CurrentMigration.Name" Placeholder="Enter migration name" class="w-100"/>
                         <RadzenRequiredValidator Component="txtName" Text="Name is required!"/>
+                    </RadzenColumn>
+                </RadzenRow>
+
+                <RadzenRow class="rz-mb-4">
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenLabel Component="ddlSourceCMS" Text="Source CMS Connection" class="rz-mb-1"/>
+                        <RadzenDropDown Name="ddlSourceCMS" Data="@CMSConnections" TextProperty="Name" ValueProperty="Id"
+                                        @bind-Value="@CurrentMigration.SourceConnectionId" Placeholder="Select a source CMS"
+                                        Class="w-100"/>
+                        <RadzenRequiredValidator Component="ddlSourceCMS" Text="Source CMS is required!"/>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenLabel Component="ddlTargetCMS" Text="Target CMS Connection" class="rz-mb-1"/>
+                        <RadzenDropDown Name="ddlTargetCMS" Data="@CMSConnections" TextProperty="Name" ValueProperty="Id"
+                                        @bind-Value="@CurrentMigration.TargetConnectionId" Placeholder="Select a target CMS"
+                                        Class="w-100"/>
+                        <RadzenRequiredValidator Component="ddlTargetCMS" Text="Target CMS is required!"/>
+                    </RadzenColumn>
+                </RadzenRow>
+
+                <RadzenRow>
+                    <RadzenColumn Size="12">
+                        <RadzenButton Icon="add" Text="Add New Batch" Click="@OnAddBatchAsync" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"/>
+                    </RadzenColumn>
+                </RadzenRow>
+
+                <RadzenRow>
+                    <RadzenColumn Size="12">
+                        <RadzenDataList Data="@MigrationBatches" TItem="MigrationBatch" AllowPaging="true" PageSize="5">
+                            <Template Context="batch">
+                                <RadzenCard Variant="Variant.Filled" Class="w-100 rz-shadow-0" Style="margin: 5px 0;">
+                                    <RadzenRow>
+                                        <RadzenColumn Size="12" SizeMD="8">
+                                            <RadzenText TextStyle="TextStyle.Subtitle1" TagName="TagName.H3" Class="rz-color-secondary">@(batch.SourceType)</RadzenText>
+                                            <RadzenText TextStyle="TextStyle.Body2">Priority: @(batch.Priority)</RadzenText>
+                                        </RadzenColumn>
+                                        <RadzenColumn Size="12" SizeMD="4" Align="Align.End">
+                                            <RadzenButton Icon="edit" Text="Edit" Click="@(() => OnEditBatchAsync(batch.Id))" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"/>
+                                            <RadzenButton Icon="delete" Text="Remove" Click="@(() => OnDeleteBatchAsync(batch.Id))" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"/>
+                                        </RadzenColumn>
+                                    </RadzenRow>
+                                </RadzenCard>
+                            </Template>
+                        </RadzenDataList>
                     </RadzenColumn>
                 </RadzenRow>
             </RadzenTemplateForm>
@@ -46,90 +94,99 @@
 </RadzenStack>
 
 @code {
-
     private bool _isSaving = false;
-    
+    private List<Connection> CMSConnections = new();
+    private List<MigrationBatch> MigrationBatches = new();
+
     [Parameter] public Guid Id { get; set; }
 
     [SupplyParameterFromForm] private Migration CurrentMigration { get; set; } = new();
-    
+
     private string CurrentPageTitle => CurrentMigration?.Name ?? "Unnamed Migration";
-    
+
     protected override async Task OnInitializedAsync()
     {
+        await LoadConnectionsAsync();
+
         if (Id != Guid.Empty)
         {
             CurrentMigration = await MigrationService.GetMigrationByIdAsync(Id) ?? new();
 
             if (CurrentMigration.Id == Guid.Empty)
                 await NavigateToAsync("/notfound");
+
+            MigrationBatches = (await MigrationBatchService.GetBatchesByMigrationIdAsync(Id)).ToList();
         }
     }
-    
+
+    private async Task LoadConnectionsAsync()
+    {
+        CMSConnections = (await ConnectionService.GetAllConnectionsAsync()).ToList();
+    }
+
     async Task OnSaveAsync()
     {
         await ShowSavingIndicatorAsync(true);
-        
+
         try
         {
             if (CurrentMigration.Id == Guid.Empty)
             {
-                // DEMO Data
-                CurrentMigration.UserId = Guid.Parse("c2ae5bbb-8815-4835-b61d-440107e32b99");
-                CurrentMigration.SourceConnectionId = Guid.Parse("278ceb98-2b89-40f4-aa9a-5be3f3cbf93b");
-                CurrentMigration.TargetConnectionId = Guid.Parse("278ceb98-2b89-40f4-aa9a-5be3f3cbf93b");
-                CurrentMigration.Status = "in_progress";
-            
+                //CurrentMigration.Status = "in_progress";
                 var newId = await MigrationService.AddMigrationAsync(CurrentMigration);
-                await NavigateToAsync($"/migrations/{newId}");
+                await NavigateToAsync($"/{newId}");
             }
             else
             {
                 await MigrationService.UpdateMigrationAsync(CurrentMigration);
             }
         }
-        catch (Exception ex)
-        {
-            // Handle errors if needed (e.g., logging)
-        }
         finally
         {
             await ShowSavingIndicatorAsync(false);
         }
     }
-    
+
     async Task OnCloseAsync() => await NavigateToAsync();
 
-    
     async Task OnDeleteAsync()
     {
-        var result = await DialogService.Confirm(
-            message: "Are you sure you want to delete this migration?",
-            title: "Delete Confirmation",
-            options: new ConfirmOptions
-            {
-                OkButtonText = "Yes",
-                CancelButtonText = "No"
-            });
-
+        var result = await DialogService.Confirm("Are you sure you want to delete this migration?", "Delete Confirmation");
         if (result == true)
         {
-            // Uncomment if you need to delete:
-            // await MigrationService.DeleteMigrationAsync(CurrentMigration.Id);
-
+            //await MigrationService.DeleteMigrationAsync(CurrentMigration.Id);
             await NavigateToAsync();
         }
     }
-    
+
+    async Task OnAddBatchAsync()
+    {
+        await NavigateToAsync($"/batches/new/{CurrentMigration.Id}");
+    }
+
+    async Task OnEditBatchAsync(Guid batchId)
+    {
+        await NavigateToAsync($"/batches/edit/{batchId}");
+    }
+
+    async Task OnDeleteBatchAsync(Guid batchId)
+    {
+        await MigrationBatchService.DeleteBatchAsync(batchId);
+        MigrationBatches.RemoveAll(b => b.Id == batchId);
+        StateHasChanged();
+    }
+
     async Task NavigateToAsync(string? route = null)
     {
-        NavigationManager.NavigateTo(route ?? "/migrations");
+        NavigationManager.NavigateTo(route ?? "/");
+        await Task.CompletedTask;
     }
+
     async Task ShowSavingIndicatorAsync(bool isSaving)
     {
         _isSaving = isSaving;
-        StateHasChanged(); // Ensure UI updates
+        StateHasChanged();
         if (isSaving)
-            await Task.Delay(500); // Delay only when enabling the indicator
+            await Task.Delay(500);
     }
 }
