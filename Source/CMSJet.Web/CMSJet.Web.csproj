@@ -24,6 +24,8 @@
       <_ContentIncludedByDefault Remove="Components\Pages\Error.razor" />
       <_ContentIncludedByDefault Remove="Components\Pages\Home.razor" />
       <_ContentIncludedByDefault Remove="Components\Pages\Weather.razor" />
+      <_ContentIncludedByDefault Remove="Components\Connectors\Pages\ConnectorPage.razor" />
+      <_ContentIncludedByDefault Remove="Components\Connectors\Pages\ConnectorsPage.razor" />
     </ItemGroup>
 
 </Project>

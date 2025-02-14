@@ -121,7 +121,7 @@
 
     private async Task LoadConnectionsAsync()
     {
-        CMSConnections = (await ConnectionService.GetAllConnectionsAsync()).ToList();
+        CMSConnections = (await ConnectionService.GetAllConnectionsByUserIdAsync(Guid.Parse("56d287d3-3d95-44b5-ad9c-f0d84b6f59eb"))).ToList();
     }
 
     async Task OnSaveAsync()

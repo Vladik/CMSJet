@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
 using CMSJet.Core.Models;
 
@@ -14,26 +13,27 @@ namespace CMSJet.Core.Data.Repositories
             new Connection
             {
                 Id = Guid.NewGuid(),
-                UserId = Guid.NewGuid(),
+                UserId = Guid.Parse("56d287d3-3d95-44b5-ad9c-f0d84b6f59eb"),
                 ConnectorId = Guid.NewGuid(),
                 Name = "Demo Source Connection",
-                Details = JsonDocument.Parse("{\"type\":\"source\",\"config\":\"value\"}"),
+                Description = "Source system connection",
+                Configurations = new(),
                 LastSync = DateTime.UtcNow
             },
             new Connection
             {
                 Id = Guid.NewGuid(),
-                UserId = Guid.NewGuid(),
+                UserId = Guid.Parse("56d287d3-3d95-44b5-ad9c-f0d84b6f59eb"),
                 ConnectorId = Guid.NewGuid(),
                 Name = "Demo Target Connection",
-                Details = JsonDocument.Parse("{\"type\":\"target\",\"config\":\"value\"}"),
+                Description = "Target system connection",
+                Configurations = new(),
                 LastSync = DateTime.UtcNow
             }
         };
-
-        public Task<IEnumerable<Connection>> GetAllConnectionsAsync() =>
-            Task.FromResult<IEnumerable<Connection>>(_connections);
-
+        
+        public Task<IEnumerable<Connection>> GetAllConnectionsByUserIdAsync(Guid userId) =>
+            Task.FromResult<IEnumerable<Connection>>(_connections.FindAll(c => c.UserId == userId));
         public Task<Connection?> GetConnectionByIdAsync(Guid id) =>
             Task.FromResult(_connections.FirstOrDefault(c => c.Id == id));
 
@@ -50,7 +50,8 @@ namespace CMSJet.Core.Data.Repositories
             if (existingConnection == null) return Task.FromResult(false);
 
             existingConnection.Name = connection.Name;
-            existingConnection.Details = connection.Details;
+            existingConnection.Description = connection.Description;
+            existingConnection.Configurations = connection.Configurations;
             existingConnection.LastSync = connection.LastSync;
 
             return Task.FromResult(true);

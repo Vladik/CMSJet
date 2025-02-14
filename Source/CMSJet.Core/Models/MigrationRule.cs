@@ -1,11 +1,14 @@
+using System.Text.Json.Nodes;
+
 namespace CMSJet.Core.Models;
 
 public class MigrationRule
 {
     public Guid Id { get; set; }
-    public Guid BatchId { get; set; } // Reference to the batch it belongs to
-    public string Field { get; set; } = string.Empty; // Field to apply rule on
-    public string Condition { get; set; } = string.Empty; // Example: "contains", "equals", "regex"
-    public string Value { get; set; } = string.Empty; // Value to check against
-    public string Action { get; set; } = string.Empty; // Example: "exclude", "transform", "modify"
+    public Guid BatchId { get; set; }
+    public string? Description { get; set; } 
+    public string Condition { get; set; } = null!; 
+    public string Action { get; set; } = null!;
+    public JsonObject Configurations { get; set; } = new();
+    public int SortOrder { get; set; } 
 }

@@ -8,31 +8,7 @@ namespace CMSJet.Core.Data.Repositories
 {
     public class MigrationRepository
     {
-        private readonly List<Migration> _migrations = new()
-        {
-            new Migration
-            {
-                Id = Guid.NewGuid(),
-                UserId = Guid.NewGuid(),
-                Name = "Demo Migration 1",
-                SourceConnectionId = Guid.NewGuid(),
-                TargetConnectionId = Guid.NewGuid(),
-                Status = MigrationStatus.Pending,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            },
-            new Migration
-            {
-                Id = Guid.NewGuid(),
-                UserId = Guid.NewGuid(),
-                Name = "Demo Migration 2",
-                SourceConnectionId = Guid.NewGuid(),
-                TargetConnectionId = Guid.NewGuid(),
-                Status = MigrationStatus.InProgress,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            }
-        };
+        private readonly List<Migration> _migrations = new();
 
         public Task<IEnumerable<Migration>> GetAllMigrationsAsync() =>
             Task.FromResult<IEnumerable<Migration>>(_migrations.OrderByDescending(m => m.CreatedAt));
@@ -55,11 +31,22 @@ namespace CMSJet.Core.Data.Repositories
             if (existingMigration == null) return Task.FromResult(false);
 
             existingMigration.Name = migration.Name;
+            existingMigration.Description = migration.Description;
             existingMigration.SourceConnectionId = migration.SourceConnectionId;
             existingMigration.TargetConnectionId = migration.TargetConnectionId;
             existingMigration.Status = migration.Status;
             existingMigration.UpdatedAt = DateTime.UtcNow;
+            existingMigration.Configurations = migration.Configurations;
 
+            return Task.FromResult(true);
+        }
+
+        public Task<bool> DeleteMigrationAsync(Guid id)
+        {
+            var migration = _migrations.FirstOrDefault(m => m.Id == id);
+            if (migration == null) return Task.FromResult(false);
+
+            _migrations.Remove(migration);
             return Task.FromResult(true);
         }
     }

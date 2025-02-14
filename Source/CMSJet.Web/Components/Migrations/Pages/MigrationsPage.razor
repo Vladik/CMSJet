@@ -18,67 +18,121 @@
         </RadzenColumn>
         <RadzenColumn Size="12" SizeMD="6">
             <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End" Gap="0.5rem">
-                <RadzenButton Icon="add" Text="Add" Click=@(args => GoToItems(Guid.Empty)) ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small" />
+                <RadzenProgressBarCircular Visible="@_isLoading" ProgressBarStyle="ProgressBarStyle.Primary" Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" Size="ProgressBarCircularSize.ExtraSmall"/>
+                <RadzenButton Icon="add" Text="Add" Click="@(() => NavigateToAsync(Guid.Empty))" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small" Disabled="@_isLoading"/>
             </RadzenStack>
         </RadzenColumn>
     </RadzenRow>
-    <RadzenTextBox Placeholder="Search ..." style="display: block; width: 100%" @oninput="@((t) => Search(t.Value?.ToString() ?? string.Empty))"/>
+
+    <RadzenTextBox Placeholder="Search ..." style="display: block; width: 100%" @oninput="@((e) => ApplySearchFilter(e.Value?.ToString() ?? string.Empty))"/>
+
     <RadzenRow>
         <RadzenColumn Size="12">
-            <RadzenDataList @ref="dataList" Data="@items" TItem="Migration" AllowPaging="true" PageSize="25" PagerHorizontalAlign="HorizontalAlign.Justify" ShowPagingSummary="false"  WrapItems="true">
-                <Template Context="migration">
-                    <RadzenCard Variant="Variant.Filled" class="w-100 rz-shadow-0" Style="margin: 0px 0px 10px 0px;">
-                        <RadzenRow>
-                            <RadzenColumn Size="12" SizeMD="10">
-                                <RadzenLink Path="@($"/{migration.Id}")">
-                                    <RadzenText TextStyle="TextStyle.Subtitle1" TagName="TagName.H2" class="rz-color-secondary">@(migration.Name)</RadzenText>
-                                </RadzenLink>
-                                <RadzenText TextStyle="TextStyle.Body2">@(migration.Name)</RadzenText>
-                            </RadzenColumn>
-                            <RadzenColumn Size="12" SizeMD="2">
-                                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End" Gap="0.5rem">
-                                    <RadzenSplitButton Icon="apps" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light" Click=@(args => OnSelectItem(args, migration.Id))>
-                                        <ChildContent>
-                                            <RadzenSplitButtonItem Text="Notes" Value="notes" Icon="notes"/>
-                                            <RadzenSplitButtonItem Text="Wiki" Value="wiki" Icon="school"/>
-                                            <RadzenSplitButtonItem Text="Tasks" Value="tasks" Icon="event_available"/>
-                                            <RadzenSplitButtonItem Text="Files" Value="files" Icon="file_present"/>
-                                        </ChildContent>
-                                    </RadzenSplitButton>
-                                </RadzenStack>
-                            </RadzenColumn>
-                        </RadzenRow>
-                    </RadzenCard>
-                </Template>
-            </RadzenDataList>
+            @if (!_isLoading && !_filteredItems.Any())
+            {
+                <RadzenAlert Severity="AlertSeverity.Info" AllowClose="false">No migrations found.</RadzenAlert>
+            }
+            else
+            {
+                <RadzenDataList @ref="dataList" Data="@_filteredItems" TItem="Migration" AllowPaging="true" PageSize="25" PagerHorizontalAlign="HorizontalAlign.Justify" ShowPagingSummary="false" WrapItems="true">
+                    <Template Context="migration">
+                        <RadzenCard Variant="Variant.Filled" class="w-100 rz-shadow-0" Style="margin: 0px 0px 10px 0px;">
+                            <RadzenRow>
+                                <RadzenColumn Size="12" SizeMD="10">
+                                    <RadzenLink Path="@($"/{migration.Id}")">
+                                        <RadzenText TextStyle="TextStyle.Subtitle1" TagName="TagName.H2" class="rz-color-secondary">@(migration.Name)</RadzenText>
+                                    </RadzenLink>
+                                    <RadzenText TextStyle="TextStyle.Body2">@(migration.Name)</RadzenText>
+                                </RadzenColumn>
+                                <RadzenColumn Size="12" SizeMD="2">
+                                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End" Gap="0.5rem">
+                                        <RadzenSplitButton Icon="apps" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light" Click="@((args) => OnSelectItemAsync(args, migration.Id))">
+                                            <ChildContent>
+                                                <RadzenSplitButtonItem Text="Notes" Value="notes" Icon="notes"/>
+                                                <RadzenSplitButtonItem Text="Wiki" Value="wiki" Icon="school"/>
+                                                <RadzenSplitButtonItem Text="Tasks" Value="tasks" Icon="event_available"/>
+                                                <RadzenSplitButtonItem Text="Files" Value="files" Icon="file_present"/>
+                                            </ChildContent>
+                                        </RadzenSplitButton>
+                                    </RadzenStack>
+                                </RadzenColumn>
+                            </RadzenRow>
+                        </RadzenCard>
+                    </Template>
+                </RadzenDataList>
+            }
         </RadzenColumn>
     </RadzenRow>
 </RadzenStack>
 
 @code {
+    private RadzenDataList<Migration>? dataList;
+    private IEnumerable<Migration> _migrations = Enumerable.Empty<Migration>();
+    private IEnumerable<Migration> _filteredItems = Enumerable.Empty<Migration>();
+    private bool _isLoading = true;
 
-    RadzenDataList<Migration> dataList = null!;
-    IEnumerable<Migration> items = null!;
-    
     protected override async Task OnInitializedAsync()
     {
-        await base.OnInitializedAsync();
-        await LoadAll();
+        await LoadMigrationsAsync();
     }
-    async Task LoadAll()
-    {
-        items = (await MigrationService.GetAllMigrationsAsync()).ToList().OrderByDescending(m=>m.CreatedAt);
-    } 
-    async Task Search(string term)
-    {
 
-    } 
-    void OnSelectItem(RadzenSplitButtonItem item, Guid? id)
+    private async Task LoadMigrationsAsync()
     {
-        NavigationManager.NavigateTo($"/{id?.ToString()}");
+        await SetLoadingIndicatorAsync(true);
+
+        try
+        {
+            _migrations = (await MigrationService.GetAllMigrationsAsync())
+                .OrderByDescending(m => m.CreatedAt);
+
+            _filteredItems = _migrations; // Initialize filtered items with all results
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error loading migrations: {ex.Message}");
+        }
+        finally
+        {
+            await SetLoadingIndicatorAsync(false);
+        }
     }
-    void GoToItems(Guid? id)
+    private async Task ApplySearchFilter(string searchTerm)
     {
-        NavigationManager.NavigateTo($"/{id}");
+        await dataList.GoToPage(0); // Reset pagination when searching
+
+        if (searchTerm.Length > 1)
+        {
+            _filteredItems = _migrations
+                .Where(m => m.Name.Contains(searchTerm, StringComparison.InvariantCultureIgnoreCase))
+                .OrderBy(m => m.Name)
+                .ToList();
+        }
+        else
+        {
+            _filteredItems = _migrations;
+        }
+
+        StateHasChanged(); // Ensure UI updates after filtering
+    }
+
+    private async Task NavigateToAsync(Guid? id = null)
+    {
+        NavigationManager.NavigateTo($"/{id ?? Guid.Empty}");
+        await Task.CompletedTask;
+    }
+
+    private async Task OnSelectItemAsync(RadzenSplitButtonItem item, Guid? id)
+    {
+        await NavigateToAsync(id);
+    }
+
+    private async Task SetLoadingIndicatorAsync(bool isLoading)
+    {
+        _isLoading = isLoading;
+        StateHasChanged();
+        if (isLoading)
+        {
+            await Task.Delay(500);
+        }
     }
 }

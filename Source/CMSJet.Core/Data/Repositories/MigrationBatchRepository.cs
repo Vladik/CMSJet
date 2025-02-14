@@ -8,37 +8,13 @@ namespace CMSJet.Core.Data.Repositories
 {
     public class MigrationBatchRepository
     {
-        private readonly List<MigrationBatch> _batches = new()
-        {
-            new MigrationBatch
-            {
-                Id = Guid.NewGuid(),
-                MigrationId = Guid.NewGuid(),
-                Name = "Batch 1",
-                SourceType = "Article",
-                TargetType = "Blog Post",
-                Status = "pending",
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            },
-            new MigrationBatch
-            {
-                Id = Guid.NewGuid(),
-                MigrationId = Guid.NewGuid(),
-                Name = "Batch 2",
-                SourceType = "Product",
-                TargetType = "Catalog Item",
-                Status = "pending",
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            }
-        };
+        private readonly List<MigrationBatch> _batches = new();
 
         public Task<IEnumerable<MigrationBatch>> GetAllBatchesAsync() =>
-            Task.FromResult<IEnumerable<MigrationBatch>>(_batches);
+            Task.FromResult<IEnumerable<MigrationBatch>>(_batches.OrderBy(b => b.Priority));
 
         public Task<IEnumerable<MigrationBatch>> GetBatchesByMigrationIdAsync(Guid migrationId) =>
-            Task.FromResult<IEnumerable<MigrationBatch>>(_batches.Where(b => b.MigrationId == migrationId));
+            Task.FromResult<IEnumerable<MigrationBatch>>(_batches.Where(b => b.MigrationId == migrationId).OrderBy(b => b.Priority));
 
         public Task<MigrationBatch?> GetBatchByIdAsync(Guid id) =>
             Task.FromResult(_batches.FirstOrDefault(b => b.Id == id));
@@ -60,7 +36,12 @@ namespace CMSJet.Core.Data.Repositories
             existingBatch.Name = batch.Name;
             existingBatch.SourceType = batch.SourceType;
             existingBatch.TargetType = batch.TargetType;
-            existingBatch.Status = batch.Status;
+            existingBatch.Priority = batch.Priority;
+            existingBatch.Enabled = batch.Enabled;
+            existingBatch.StopOnFailure = batch.StopOnFailure;
+            existingBatch.FieldMappings = batch.FieldMappings;
+            existingBatch.Rules = batch.Rules;
+            existingBatch.Configurations = batch.Configurations;
             existingBatch.UpdatedAt = DateTime.UtcNow;
 
             return Task.FromResult(true);

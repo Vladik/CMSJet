@@ -1,10 +1,11 @@
 @page "/connections"
 @rendermode InteractiveServer
 @inject NavigationManager NavigationManager
+@inject DialogService DialogService
+@inject IConnectionService ConnectionService
 
-@using CMSJet.Core.Models
 @using CMSJet.Core.Data.Services
-@inject IMigrationService MigrationService
+@using CMSJet.Core.Models
 
 <PageTitle>Connections</PageTitle>
 
@@ -18,34 +19,23 @@
         </RadzenColumn>
         <RadzenColumn Size="12" SizeMD="6">
             <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End" Gap="0.5rem">
-                <RadzenButton Icon="add" Text="Add" Click=@(args => GoToItems(Guid.Empty)) ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small" />
+                <RadzenProgressBarCircular Visible="@_isLoading" ProgressBarStyle="ProgressBarStyle.Primary" Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" Size="ProgressBarCircularSize.ExtraSmall"/>
+                <RadzenButton Icon="add" Text="Add" Click="@(() => NavigateToAsync(Guid.Empty))" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small" Disabled="@_isLoading"/>
             </RadzenStack>
         </RadzenColumn>
     </RadzenRow>
-    <RadzenTextBox Placeholder="Search ..." style="display: block; width: 100%" @oninput="@((t) => Search(t.Value?.ToString() ?? string.Empty))"/>
+    
     <RadzenRow>
         <RadzenColumn Size="12">
-            <RadzenDataList @ref="dataList" Data="@items" TItem="Migration" AllowPaging="true" PageSize="25" PagerHorizontalAlign="HorizontalAlign.Justify" ShowPagingSummary="false"  WrapItems="true">
-                <Template Context="migration">
+            <RadzenDataList @ref="_dataList" Data="@_connections" TItem="Connection" AllowPaging="true" PageSize="25" PagerHorizontalAlign="HorizontalAlign.Justify" ShowPagingSummary="false" WrapItems="true">
+                <Template Context="connection">
                     <RadzenCard Variant="Variant.Filled" class="w-100 rz-shadow-0" Style="margin: 0px 0px 10px 0px;">
                         <RadzenRow>
-                            <RadzenColumn Size="12" SizeMD="10">
-                                <RadzenLink Path="@($"/connections/{migration.Id}")">
-                                    <RadzenText TextStyle="TextStyle.Subtitle1" TagName="TagName.H2" class="rz-color-secondary">@(migration.Name)</RadzenText>
+                            <RadzenColumn Size="12" SizeMD="12">
+                                <RadzenLink Path="@($"/connections/{connection.Id}")">
+                                    <RadzenText TextStyle="TextStyle.Subtitle1" TagName="TagName.H2" class="rz-color-secondary">@(connection.Name)</RadzenText>
                                 </RadzenLink>
-                                <RadzenText TextStyle="TextStyle.Body2">@(migration.Name)</RadzenText>
-                            </RadzenColumn>
-                            <RadzenColumn Size="12" SizeMD="2">
-                                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End" Gap="0.5rem">
-                                    <RadzenSplitButton Icon="apps" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light" Click=@(args => OnSelectItem(args, migration.Id))>
-                                        <ChildContent>
-                                            <RadzenSplitButtonItem Text="Notes" Value="notes" Icon="notes"/>
-                                            <RadzenSplitButtonItem Text="Wiki" Value="wiki" Icon="school"/>
-                                            <RadzenSplitButtonItem Text="Tasks" Value="tasks" Icon="event_available"/>
-                                            <RadzenSplitButtonItem Text="Files" Value="files" Icon="file_present"/>
-                                        </ChildContent>
-                                    </RadzenSplitButton>
-                                </RadzenStack>
+                                <RadzenText TextStyle="TextStyle.Body2">@(connection.Description)</RadzenText>
                             </RadzenColumn>
                         </RadzenRow>
                     </RadzenCard>
@@ -55,30 +45,48 @@
     </RadzenRow>
 </RadzenStack>
 
-@code {
 
-    RadzenDataList<Migration> dataList = null!;
-    IEnumerable<Migration> items = null!;
+@code {
+    private bool _isLoading = true;
     
+    private RadzenDataList<Connection> _dataList = null!;
+    private IEnumerable<Connection> _connections = null!;
+
     protected override async Task OnInitializedAsync()
     {
-        await base.OnInitializedAsync();
-        await LoadAll();
+        await LoadConnectionAsync();
     }
-    async Task LoadAll()
-    {
-        items = (await MigrationService.GetAllMigrationsAsync()).ToList().OrderByDescending(m=>m.CreatedAt);
-    } 
-    async Task Search(string term)
-    {
 
-    } 
-    void OnSelectItem(RadzenSplitButtonItem item, Guid? id)
+    private async Task LoadConnectionAsync()
     {
-        NavigationManager.NavigateTo($"/connections/{id?.ToString()}");
+        await SetLoadingIndicatorAsync(true);
+
+        try
+        {
+            _connections = (await ConnectionService.GetAllConnectionsByUserIdAsync(
+                    Guid.Parse("56d287d3-3d95-44b5-ad9c-f0d84b6f59eb"))).OrderBy(c => c.Name);
+        }
+        catch (Exception ex)
+        {
+            await Console.Error.WriteLineAsync($"Error loading connections: {ex.Message}");
+        }
+        finally
+        {
+            await SetLoadingIndicatorAsync(false);
+        }
     }
-    void GoToItems(Guid? id)
+
+    private async Task NavigateToAsync(Guid? id = null)
     {
-        NavigationManager.NavigateTo($"/connections/{id}");
+        NavigationManager.NavigateTo($"/connections/{id ?? Guid.Empty}");
+        await Task.CompletedTask;
+    }
+
+    private async Task SetLoadingIndicatorAsync(bool isLoading)
+    {
+        _isLoading = isLoading;
+        StateHasChanged();
+        if (isLoading)
+            await Task.Delay(100);
     }
 }
